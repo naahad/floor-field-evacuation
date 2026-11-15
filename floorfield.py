@@ -36,6 +36,25 @@ def place_people(walkable, door, rho=0.3, rng=None):
     pos = rng.choice(len(cells), size=round(rho * len(cells)), replace=False)
     return cells[pos]
 
+MOVES = np.array([[0, 0], [-1, 0], [1, 0], [0, -1], [0, 1]])  # 제자리, 상, 하, 좌, 우
+
+def move_probs(p, S, walkable, occ, k_S):
+    """사람 한 명(p = (i, j))의 5방향 이동 확률.
+    occ: 사람이 있는 칸 True인 bool 배열
+    반환: 길이 5 float 배열, 합 1, 순서는 MOVES와 같음"""
+    nb = p + MOVES
+
+    ni, nj = nb.T
+    S_nb = S[ni, nj]
+    walk_nb = walkable[ni, nj]
+    occ_nb = occ[ni, nj]
+
+    free_nb = ~occ_nb; free_nb[0] = True
+
+    w = np.exp(k_S * (S_nb - S_nb.max())) * walk_nb * free_nb
+    probs = w / w.sum()
+    return probs
+
 if __name__ == "__main__":
     walkable, door = make_room()
     # print(walkable.shape, walkable.sum(), door)
@@ -45,5 +64,10 @@ if __name__ == "__main__":
     # plt.imshow(S); plt.colorbar(); plt.show()
 
     pos = place_people(walkable, door, rng=np.random.default_rng(0))
-    print(len(pos), len(np.unique(pos, axis=0)), walkable[pos[:, 0], pos[:, 1]].all(), (pos == door).all(axis=1).any())
-    occ = np.zeros_like(walkable); occ[pos[:,0], pos[:,1]] = True; plt.imshow(occ)
+    # print(len(pos), len(np.unique(pos, axis=0)), walkable[pos[:, 0], pos[:, 1]].all(), (pos == door).all(axis=1).any())
+    occ = np.zeros_like(walkable)
+    # occ[pos[:,0], pos[:,1]] = True; plt.imshow(occ)
+
+    occ[1, 31] = True
+    probs = move_probs((1,31), S, walkable, occ, 0.4)
+    print(probs)
