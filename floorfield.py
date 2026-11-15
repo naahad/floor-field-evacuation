@@ -106,5 +106,12 @@ def simulate(k_S, rho=0.3, seed=0, max_steps=20000):
     return None
 
 if __name__ == "__main__":
-    T = simulate(10)
-    print(T)
+    k_S_list = [10, 1, 0.4]
+    seeds = range(3)
+    Ts = []
+
+    for k_S in k_S_list:
+        Ts = []
+        for seed in seeds:
+            Ts.append(simulate(k_S, seed=seed))
+        print(k_S, Ts, np.mean(Ts))
