@@ -81,7 +81,19 @@ def resolve_conflicts(pos, targets, rng):
                     new_pos[m] = pos[m]
     return new_pos
 
+def step(pos, S, walkable, door, k_S, rng):
+    """한 스텝: 점유 → 목표 선택 → 충돌 해결 → 문 칸 도착자 제거.
+    반환: 남은 사람의 pos (M×2, M ≤ N)"""
+    occ = np.zeros_like(walkable)
+    occ[pos[:,0], pos[:,1]] = True
+
+    targets = choose_targets(pos, S, walkable, occ, k_S, rng)
+    new_pos = resolve_conflicts(pos, targets, rng)
+    at_door = (new_pos == door).all(axis=1)
+    return new_pos[~at_door]
+
 if __name__ == "__main__":
+    k_S = 0.4
     walkable, door = make_room()
     # print(walkable.shape, walkable.sum(), door)
 
@@ -92,17 +104,8 @@ if __name__ == "__main__":
     rng = np.random.default_rng(0)
     pos = place_people(walkable, door, rng=rng)
     # print(len(pos), len(np.unique(pos, axis=0)), walkable[pos[:, 0], pos[:, 1]].all(), (pos == door).all(axis=1).any())
-    occ = np.zeros_like(walkable)
-    occ[pos[:,0], pos[:,1]] = True
 
-    targets = choose_targets(pos, S, walkable, occ, 0.4, rng)
-    # print(targets.shape)
-    # print(np.abs(targets - pos).sum(axis=1).max())
-    # print(walkable[targets[:,0], targets[:,1]].all())
-
-    new_pos = resolve_conflicts(pos, targets, rng)
-    print(len(np.unique(new_pos, axis=0)) == len(new_pos))
-    print((new_pos != pos).any(axis=1).sum())
-    want = (targets != pos).any(axis=1)
-    moved = (new_pos != pos).any(axis=1)
-    print(moved.sum() == len(np.unique(targets[want], axis=0)))
+    for t in range(300):
+        pos = step(pos, S, walkable, door, k_S, rng)
+        if t % 50 == 0:
+            print(t, len(pos))
