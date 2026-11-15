@@ -92,20 +92,19 @@ def step(pos, S, walkable, door, k_S, rng):
     at_door = (new_pos == door).all(axis=1)
     return new_pos[~at_door]
 
-if __name__ == "__main__":
-    k_S = 0.4
+def simulate(k_S, rho=0.3, seed=0, max_steps=20000):
+    """방을 만들고 사람이 0명이 될 때까지 step을 반복한다.
+    반환: T (대피 시간, 스텝 수). max_steps에 걸리면 None"""
     walkable, door = make_room()
-    # print(walkable.shape, walkable.sum(), door)
-
     S = static_field(walkable, door)
-    # print(S[door], S[63, 1], S[63, 63], S[0, 0])
-    # plt.imshow(S); plt.colorbar(); plt.show()
+    rng = np.random.default_rng(seed)
+    pos = place_people(walkable, door, rho=rho, rng=rng)
+    for t in range(1, max_steps + 1):
+        pos = step(pos, S, walkable, door, k_S=k_S, rng=rng)
+        if len(pos) == 0:
+            return t
+    return None
 
-    rng = np.random.default_rng(0)
-    pos = place_people(walkable, door, rng=rng)
-    # print(len(pos), len(np.unique(pos, axis=0)), walkable[pos[:, 0], pos[:, 1]].all(), (pos == door).all(axis=1).any())
-
-    for t in range(300):
-        pos = step(pos, S, walkable, door, k_S, rng)
-        if t % 50 == 0:
-            print(t, len(pos))
+if __name__ == "__main__":
+    T = simulate(10)
+    print(T)
