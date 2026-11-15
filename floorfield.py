@@ -55,6 +55,17 @@ def move_probs(p, S, walkable, occ, k_S):
     probs = w / w.sum()
     return probs
 
+def choose_targets(pos, S, walkable, occ, k_S, rng):
+    """사람마다 move_probs 확률로 5방향 중 하나를 뽑는다.
+    반환: targets (N×2 int 배열, pos와 같은 순서, 한 줄 = 그 사람이 가려는 칸)"""
+    targets = np.zeros_like(pos)
+
+    for n in range(len(pos)):
+        probs = move_probs(pos[n], S, walkable, occ, k_S)
+        k = rng.choice(5, p=probs)
+        targets[n] = pos[n] + MOVES[k]
+    return targets
+
 if __name__ == "__main__":
     walkable, door = make_room()
     # print(walkable.shape, walkable.sum(), door)
@@ -63,11 +74,13 @@ if __name__ == "__main__":
     # print(S[door], S[63, 1], S[63, 63], S[0, 0])
     # plt.imshow(S); plt.colorbar(); plt.show()
 
-    pos = place_people(walkable, door, rng=np.random.default_rng(0))
+    rng = np.random.default_rng(0)
+    pos = place_people(walkable, door, rng=rng)
     # print(len(pos), len(np.unique(pos, axis=0)), walkable[pos[:, 0], pos[:, 1]].all(), (pos == door).all(axis=1).any())
     occ = np.zeros_like(walkable)
-    # occ[pos[:,0], pos[:,1]] = True; plt.imshow(occ)
+    occ[pos[:,0], pos[:,1]] = True
 
-    occ[1, 31] = True
-    probs = move_probs((1,31), S, walkable, occ, 0.4)
-    print(probs)
+    targets = choose_targets(pos, S, walkable, occ, 0.4, rng)
+    print(targets.shape)
+    print(np.abs(targets - pos).sum(axis=1).max())
+    print(walkable[targets[:,0], targets[:,1]].all())
