@@ -66,6 +66,21 @@ def choose_targets(pos, S, walkable, occ, k_S, rng):
         targets[n] = pos[n] + MOVES[k]
     return targets
 
+def resolve_conflicts(pos, targets, rng):
+    """같은 칸을 고른 사람이 여럿이면 무작위로 한 명만 이동, 나머지는 제자리 (μ=0).
+    반환: new_pos (N×2 int 배열, pos와 같은 순서)"""
+    new_pos = targets.copy()
+    claims = dict()
+    for n in range(len(pos)):
+        claims.setdefault(tuple(targets[n]), []).append(n)
+    for _, people in claims.items():
+        if len(people) >= 2:
+            winner = rng.choice(people)
+            for m in people:
+                if m != winner:
+                    new_pos[m] = pos[m]
+    return new_pos
+
 if __name__ == "__main__":
     walkable, door = make_room()
     # print(walkable.shape, walkable.sum(), door)
@@ -81,6 +96,13 @@ if __name__ == "__main__":
     occ[pos[:,0], pos[:,1]] = True
 
     targets = choose_targets(pos, S, walkable, occ, 0.4, rng)
-    print(targets.shape)
-    print(np.abs(targets - pos).sum(axis=1).max())
-    print(walkable[targets[:,0], targets[:,1]].all())
+    # print(targets.shape)
+    # print(np.abs(targets - pos).sum(axis=1).max())
+    # print(walkable[targets[:,0], targets[:,1]].all())
+
+    new_pos = resolve_conflicts(pos, targets, rng)
+    print(len(np.unique(new_pos, axis=0)) == len(new_pos))
+    print((new_pos != pos).any(axis=1).sum())
+    want = (targets != pos).any(axis=1)
+    moved = (new_pos != pos).any(axis=1)
+    print(moved.sum() == len(np.unique(targets[want], axis=0)))
