@@ -100,8 +100,7 @@ def update_D(D, walkable, delta, alpha, rng):
     D_left = D - gone
     moved = rng.binomial(D_left, alpha)
     D_stay = D_left - moved
-
-    print(D_left.sum(), moved.sum(), D_stay.sum())
+    dirs = rng.multinomial(moved, [0.25] * 4)
     return D_left
 
 def simulate(k_S, rho=0.3, seed=0, max_steps=20000):
@@ -134,9 +133,17 @@ def check_diffusion_2a():
     rng = np.random.default_rng(0)
     update_D(D, walkable, 0.3, 0.3, rng)
 
+def check_diffusion_2b():
+    """2b 확인: dirs 모양이 (63, 63, 4), 방향 합이 moved와 같음"""
+    D = np.full((63, 63), 10)
+    walkable, _ = make_room()
+    rng = np.random.default_rng(0)
+    update_D(D, walkable, 0.3, 0.3, rng)
+
 if __name__ == "__main__":
     # check_update_D()
-    check_diffusion_2a()
+    # check_diffusion_2a()
+    check_diffusion_2b()
     # k_S_list = [10, 1, 0.4]
     # seeds = range(3)
     # Ts = []
