@@ -101,7 +101,20 @@ def update_D(D, walkable, delta, alpha, rng):
     moved = rng.binomial(D_left, alpha)
     D_stay = D_left - moved
     dirs = rng.multinomial(moved, [0.25] * 4)
-    return D_left
+
+    new_D = D_stay.copy()
+    for k in range(4):
+        di, dj = MOVES[k + 1]
+        ok_nb = np.roll(walkable, (-di, -dj), axis=(0, 1))
+        cnt = dirs[:, :, k]
+
+        sent = cnt * ok_nb
+        bounced = cnt - sent
+        arrive = np.roll(sent, (di, dj),  axis=(0, 1))
+
+        new_D += bounced
+        new_D += arrive
+    return new_D
 
 def simulate(k_S, rho=0.3, seed=0, max_steps=20000):
     """방을 만들고 사람이 0명이 될 때까지 step을 반복한다.
@@ -140,10 +153,19 @@ def check_diffusion_2b():
     rng = np.random.default_rng(0)
     update_D(D, walkable, 0.3, 0.3, rng)
 
+def check_diffusion_2c():
+    """2c 확인: 방 칸에만 D=10. 확산 후에도 개수가 보존되고 벽 칸은 0"""
+    walkable, _ = make_room()
+    D = 10 * walkable
+    rng = np.random.default_rng(0)
+    new_D = update_D(D, walkable, 0.3, 0.3, rng)
+    print(new_D.sum(), new_D[~walkable].sum(), new_D.min(), new_D.max())
+
 if __name__ == "__main__":
     # check_update_D()
     # check_diffusion_2a()
-    check_diffusion_2b()
+    # check_diffusion_2b()
+    check_diffusion_2c()
     # k_S_list = [10, 1, 0.4]
     # seeds = range(3)
     # Ts = []
