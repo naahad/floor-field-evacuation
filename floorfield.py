@@ -92,6 +92,18 @@ def step(pos, S, walkable, door, k_S, rng):
     at_door = (new_pos == door).all(axis=1)
     return new_pos[~at_door]
 
+def update_D(D, walkable, delta, alpha, rng):
+    """동적 필드 D를 한 스텝 갱신한다: boson마다 확률 delta로 사라지고,
+    남은 것은 확률 alpha로 이웃 칸으로 옮겨 간다. 벽으로는 가지 않는다.
+    반환: new_D (D와 같은 크기 int 배열)"""
+    gone = rng.binomial(D, delta)
+    D_left = D - gone
+    moved = rng.binomial(D_left, alpha)
+    D_stay = D_left - moved
+
+    print(D_left.sum(), moved.sum(), D_stay.sum())
+    return D_left
+
 def simulate(k_S, rho=0.3, seed=0, max_steps=20000):
     """방을 만들고 사람이 0명이 될 때까지 step을 반복한다.
     반환: T (대피 시간, 스텝 수). max_steps에 걸리면 None"""
@@ -105,13 +117,32 @@ def simulate(k_S, rho=0.3, seed=0, max_steps=20000):
             return t
     return None
 
-if __name__ == "__main__":
-    k_S_list = [10, 1, 0.4]
-    seeds = range(3)
-    Ts = []
+def check_update_D():
+    """update_D 감쇠 확인: 합이 39690에서 약 27783(27600~27970)으로 줄면 정상"""
+    D = np.full((63, 63), 10)
+    delta = 0.3
+    alpha = 0.3
+    walkable, _ = make_room()
+    rng = np.random.default_rng(0)
+    D_left = update_D(D, walkable, delta, alpha, rng)
+    print(D.sum(), D_left.sum(), D_left.shape)
 
-    for k_S in k_S_list:
-        Ts = []
-        for seed in seeds:
-            Ts.append(simulate(k_S, seed=seed))
-        print(k_S, Ts, np.mean(Ts))
+def check_diffusion_2a():
+    """2a 확인: moved 합이 D_left 합 27843의 약 30%(8353, 8200~8500), D_stay 합이 나머지"""
+    D = np.full((63, 63), 10)
+    walkable, _ = make_room()
+    rng = np.random.default_rng(0)
+    update_D(D, walkable, 0.3, 0.3, rng)
+
+if __name__ == "__main__":
+    # check_update_D()
+    check_diffusion_2a()
+    # k_S_list = [10, 1, 0.4]
+    # seeds = range(3)
+    # Ts = []
+
+    # for k_S in k_S_list:
+    #     Ts = []
+    #     for seed in seeds:
+    #         Ts.append(simulate(k_S, seed=seed))
+    #     print(k_S, Ts, np.mean(Ts))
